@@ -1,21 +1,21 @@
-import os, requests, json
+iimport os, requests, json
 
-WEBHOOK   = os.getenv("WEBHOOK")
-KEY       = os.getenv("WEATHER_KEY")
-CITY      = os.getenv("CITY")
+WEBHOOK = os.getenv("WEBHOOK")
+KEY     = os.getenv("WEATHER_KEY")
+CITY    = os.getenv("CITY", "320506")
 
-# 打印实际调用的 URL 方便排查
-url = f"https://devapi.qweather.com/v7/weather/3d?location={CITY}&key={KEY}"
-print("Request URL:", url)
-
+url = f"https://restapi.amap.com/v3/weather/weatherInfo?city={CITY}&key={KEY}&extensions=all"
 r = requests.get(url, timeout=10).json()
-print("API response:", json.dumps(r, ensure_ascii=False, indent=2))
 
-# 如果出错，直接给出原因
-if "daily" not in r:
-    raise RuntimeError(f"❌ API 报错：{r.get('code', 'unknown')} - {r.get('msg', 'no message')}")
+if r.get("status") != "1":
+    raise RuntimeError(r.get("info", "高德API错误"))
 
-today = r["daily"][0]
-text = f"{CITY}今日天气\n白天：{today['textDay']} {today['tempMax']}°C\n夜间：{today['textNight']} {today['tempMin']}°C"
-payload = {"msg_type":"text","content":{"text":text}}
+today = r["forecasts"][0]["casts"][0]
+text = (
+    f"苏州市吴中区今日天气\n"
+    f"白天：{today['dayweather']}，{today['daytemp']}°C\n"
+    f"夜间：{today['nightweather']}，{today['nighttemp']}°C"
+)
+
+payload = {"msg_type": "text", "content": {"text": text}}
 requests.post(WEBHOOK, json=payload)
