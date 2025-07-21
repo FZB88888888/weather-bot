@@ -1,4 +1,4 @@
-iimport os, requests, json
+import os, requests, json
 
 WEBHOOK = os.getenv("WEBHOOK")
 KEY     = os.getenv("WEATHER_KEY")
