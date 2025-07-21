@@ -1,34 +1,20 @@
-import os, requests, json
+import os, requests, random
 
+# 配置
 WEBHOOK = os.getenv("WEBHOOK")
 KEY     = os.getenv("WEATHER_KEY")
-CITY    = os.getenv("CITY", "320506")
+CITY    = os.getenv("CITY", "320500")   # 苏州大市
 
+# 1. 天气
 url = f"https://restapi.amap.com/v3/weather/weatherInfo?city={CITY}&key={KEY}&extensions=all"
 r = requests.get(url, timeout=10).json()
-
 if r.get("status") != "1":
-    raise RuntimeError(r.get("info", "高德API错误"))
-
+    raise RuntimeError(r.get("info"))
 today = r["forecasts"][0]["casts"][0]
-import random, datetime
 
-# 随机心灵鸡汤
+# 2. 30 句经典名著鸡汤（随机）
 quotes = [
-    "不管今天天气如何，记得给自己一个微笑。",
-    "阳光总在风雨后，愿你也如此。",
-    "每一天都是新的开始，愿你心中有光。",
-    "天凉加衣，心凉加糖，愿你温暖如初。",
-    "把烦恼留给昨天，把希望交给明天。",
-    "愿你眼里有星辰，心中有暖阳。",
-    "天气在变，心情别变，保持热爱，奔赴山海。",
-    "人生不过如此,且行且珍惜。自己永远是自己的主角,不不要总在别人的
-戏剧里充当配角。",
-    "心里最崇拜谁,不必变成那个人,而是用那个人的精神和方法,去变成
-你自己",
-    "做人的精神气及气势不能输,总有一天你会东山再起。做人气势上输了,
-再也不可能起来。",
-     "生活不可能像你想象的那么好，但也不会像你想象的那么糟。——莫泊桑《羊脂球》[^34^]",
+    "生活不可能像你想象的那么好，但也不会像你想象的那么糟。——莫泊桑《羊脂球》[^34^]",
     "一个人可以被毁灭，但绝不能被打败。——海明威《老人与海》[^34^]",
     "不管怎么样，明天又是新的一天。——《飘》[^34^]",
     "人类的一切智慧是包含在这四个字里面的：等待和希望。——《基督山伯爵》[^34^]",
@@ -57,17 +43,20 @@ quotes = [
     "每个人都会有缺陷，就像被上帝咬过的苹果。——托尔斯泰《战争与和平》[^35^]",
     "为生命画一片树叶，只要心存相信，总有奇迹发生。——欧·亨利[^35^]",
     "不要向井里吐痰，也许你还会来喝井里的水。——《静静的顿河》[^35^]",
-    "人的一切痛苦，本质上都是对自己无能的愤怒。——王小波",
+    "人的一切痛苦，本质上都是对自己无能的愤怒。——王小波"
 ]
 
-today_quote = random.choice(quotes)
+quote = random.choice(quotes)
 
+# 3. 拼接消息
 text = (
     f"【机器人】苏州市吴中区今日天气\n"
     f"白天：{today['dayweather']}，{today['daytemp']}°C\n"
     f"夜间：{today['nightweather']}，{today['nighttemp']}°C\n"
-    f"—— {today_quote}"
+    f"—— {quote}"
 )
 
+# 4. 发送到飞书
+import requests
 payload = {"msg_type": "text", "content": {"text": text}}
-requests.post(WEBHOOK, json=payload)
+requests.post(os.getenv("WEBHOOK"), json=payload)
