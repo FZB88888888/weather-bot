@@ -151,37 +151,42 @@ quote = random.choice(quotes)
 requests.post(WEBHOOK, json={"msg_type": "text", "content": {"text": f"—— {quote}"}})
 
 # ---------- 3. 三大热榜 ----------
-hot_sources = {
-    "📈 抖音热榜": "douyin",
-    "📈 微博热搜": "weibo",
-    "📈 百度热榜": "baidu"
-}
-for title, src in hot_sources.items():
-    try:
-        data = requests.get(
-            f"https://api.vvhan.com/api/hotlist?type={src}",
-            timeout=10
-        ).json()["data"][:8]
-    except Exception:
-        data = []
+# ---------- 实时热榜 ----------
+def fetch_hot():
+    """聚合官方热榜"""
+    sources = {
+        "📈 微博热搜": "https://weibo.com/ajax/side/hotSearch",
+        "📈 百度热榜": "https://top.baidu.com/api/board?platform=wise&tab=realtime",
+        "📈 抖音热榜": "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word/"
+    }
+    headers = {"User-Agent": "Mozilla/5.0"}
 
-    card = {
-        "msg_type": "post",
-        "content": {
-            "post": {
-                "zh_cn": {
-                    "title": title,
-                    "content": [
-                        [{"tag": "text", "text": f"{i+1}. {item['title']}"}]
-                        for i, item in enumerate(data)
-                    ] or [[{"tag": "text", "text": "暂无数据"}]]
+    for title, url in sources.items():
+        try:
+            if "weibo" in url:
+                data = requests.get(url, headers=headers, timeout=10).json()
+                items = [i["word"] for i in data["data"]["realtime"][:8]]
+            elif "baidu" in url:
+                data = requests.get(url, headers=headers, timeout=10).json()
+                items = [i["word"] for i in data["data"]["cards"][0]["content"][:8]]
+            elif "douyin" in url:
+                data = requests.get(url, headers=headers, timeout=10).json()
+                items = [i["word"] for i in data["word_list"][:8]]
+        except Exception:
+            items = ["接口异常，稍后重试"]
+
+        card = {
+            "msg_type": "post",
+            "content": {
+                "post": {
+                    "zh_cn": {
+                        "title": title,
+                        "content": [[{"tag": "text", "text": f"{i+1}. {t}"}]
+                                    for i, t in enumerate(items)]
+                    }
                 }
             }
         }
-    }
-    requests.post(WEBHOOK, json=card)
+        requests.post(WEBHOOK, json=card)
 
-# 4. 发送到飞书
-import requests
-payload = {"msg_type": "text", "content": {"text": text}}
-requests.post(os.getenv("WEBHOOK"), json=payload)
+fetch_hot()
