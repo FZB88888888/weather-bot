@@ -9,9 +9,30 @@ CITY    = "101190406"                       # 苏州市 LocationID
 url_weather = f"https://{HOST}/v7/weather/3d?location={CITY}&key={KEY}"
 weather_data = requests.get(url_weather, timeout=10).json()
 
-# 获取生活指数数据
-url_indices = f"https://{HOST}/v7/indices/1d?location={CITY}&key={KEY}&type=0"
-indices_data = requests.get(url_indices, timeout=10).json()
+# ---------- 生活指数 ----------
+# 需要的生活指数类型编码（和风天气）
+index_codes = [
+    "3",  # 穿衣指数
+    "5",  # 旅游指数
+    "8",  # 过敏指数
+    "9",  # 感冒指数
+    "10", # 空气污染扩散条件指数
+    "11", # 化妆指数
+    "12", # 晾晒指数
+    "13", # 交通指数
+    "15"  # 防晒指数
+]
+url_idx = f"https://{HOST}/v7/indices/1d?location={CITY}&key={KEY}&type={','.join(index_codes)}"
+idx = requests.get(url_idx, timeout=10).json()
+if idx.get("code") != "200":
+    idx["daily"] = []
+
+# 只拼需要的 9 行
+indices_lines = [
+    f"{d['name']}：{d['text']}" for d in idx.get("daily", [])
+]
+
+indices_text = "\n".join(indices_lines) + "\n"
 
 # 获取天气预警数据
 url_warning = f"https://{HOST}/v7/warning/now?location={CITY}&key={KEY}"
@@ -44,7 +65,9 @@ if warning_data["warning"]:
         warning_text += f"{warning['title']}：{warning['text']}\n"
 
 # 组合消息
-final_text = weather_text + indices_text + warning_text
+indices_lines = [f"{d['name']}：{d['text']}" for d in idx.get("daily", [])]
+indices_text  = "\n".join(indices_lines) + "\n"
+final_text    = weather_text + indices_text + warning_text
 requests.post(WEBHOOK, json={"msg_type": "text", "content": {"text": final_text}})
 
 # ---------- 2. 名人名言 ----------
