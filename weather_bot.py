@@ -2,7 +2,7 @@ import os, requests, random
 
 WEBHOOK = os.getenv("WEBHOOK")
 KEY     = os.getenv("WEATHER_KEY")          # 和风天气专属 Key
-HOST    = os.getenv("WEATHER_HOST")         # 和风天气专属 Host（如 mr2vhe92ku.re.qweatherapi.com）
+HOST = "mr2vhe92ku.re.qweatherapi.com"       # 和风天气专属 Host（如 mr2vhe92ku.re.qweatherapi.com）
 CITY    = "101190406"                       # 苏州市 LocationID
 
 # ---------- 和风天气 ----------
