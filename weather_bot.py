@@ -1,25 +1,50 @@
 import os, requests, random
 
 WEBHOOK = os.getenv("WEBHOOK")
-KEY     = os.getenv("WEATHER_KEY")          # 和风天气专属 Key
-HOST = "mr2vhe92ku.re.qweatherapi.com"       # 和风天气专属 Host（如 mr2vhe92ku.re.qweatherapi.com）
+KEY     = os.getenv("WEATHER_KEY")          # 和风天气 Key
+HOST    = "mr2vhe92ku.re.qweatherapi.com"   # 专属 Host（控制台里复制）
 CITY    = "101190406"                       # 苏州市 LocationID
 
-# ---------- 和风天气 ----------
-url = f"https://{HOST}/v7/weather/3d?location={CITY}&key={KEY}"
-w = requests.get(url, timeout=10).json()
+# 获取天气数据
+url_weather = f"https://{HOST}/v7/weather/3d?location={CITY}&key={KEY}"
+weather_data = requests.get(url_weather, timeout=10).json()
 
-if w.get("code") != "200":
-    raise RuntimeError(f"和风天气错误：{w}")
+# 获取生活指数数据
+url_indices = f"https://{HOST}/v7/indices/1d?location={CITY}&key={KEY}&type=0"
+indices_data = requests.get(url_indices, timeout=10).json()
 
-today = w["daily"][0]
-weather = (
+# 获取天气预警数据
+url_warning = f"https://{HOST}/v7/warning/now?location={CITY}&key={KEY}"
+warning_data = requests.get(url_warning, timeout=10).json()
+
+# 检查API调用是否成功
+if weather_data.get("code") != "200" or indices_data.get("code") != "200" or warning_data.get("code") != "200":
+    raise RuntimeError("API 调用失败")
+
+# 天气信息
+today_weather = weather_data["daily"][0]
+weather_text = (
     f"【机器人】苏州市今日天气\n"
-    f"白天：{today['textDay']} {today['tempMax']}°C\n"
-    f"夜间：{today['textNight']} {today['tempMin']}°C"
+    f"白天：{today_weather['textDay']} {today_weather['tempMax']}°C\n"
+    f"夜间：{today_weather['textNight']} {today_weather['tempMin']}°C\n"
+    f"湿度：{today_weather['humidity']}%\n"
+    f"风向：白天 {today_weather['windDirDay']} {today_weather['windScaleDay']}级，夜间 {today_weather['windDirNight']} {today_weather['windScaleNight']}级\n"
 )
 
-requests.post(WEBHOOK, json={"msg_type": "text", "content": {"text": weather}})
+# 生活指数信息
+indices_text = ""
+for index in indices_data["daily"]:
+    indices_text += f"{index['name']}：{index['text']}\n"
+
+# 天气预警信息
+warning_text = ""
+if warning_data["warning"]:
+    for warning in warning_data["warning"]:
+        warning_text += f"{warning['title']}：{warning['text']}\n"
+
+# 组合消息
+final_text = weather_text + indices_text + warning_text
+requests.post(WEBHOOK, json={"msg_type": "text", "content": {"text": final_text}})
 
 # ---------- 2. 名人名言 ----------
 quotes = [
