@@ -1,20 +1,24 @@
-import os, requests, random, datetime
+import os, requests, random
 
 WEBHOOK = os.getenv("WEBHOOK")
-KEY     = os.getenv("WEATHER_KEY")
-CITY    = os.getenv("CITY", "320500")
+KEY     = os.getenv("WEATHER_KEY")          # 和风天气专属 Key
+HOST    = os.getenv("WEATHER_HOST")         # 和风天气专属 Host（如 mr2vhe92ku.re.qweatherapi.com）
+CITY    = "101190406"                       # 苏州市 LocationID
 
-# ---------- 1. 天气 ----------
-w = requests.get(
-    f"https://restapi.amap.com/v3/weather/weatherInfo?city={CITY}&key={KEY}&extensions=all",
-    timeout=10
-).json()
-today = w["forecasts"][0]["casts"][0]
+# ---------- 和风天气 ----------
+url = f"https://{HOST}/v7/weather/3d?location={CITY}&key={KEY}"
+w = requests.get(url, timeout=10).json()
+
+if w.get("code") != "200":
+    raise RuntimeError(f"和风天气错误：{w}")
+
+today = w["daily"][0]
 weather = (
-    f"【机器人】苏州市吴中区今日天气\n"
-    f"白天：{today['dayweather']} {today['daytemp']}°C\n"
-    f"夜间：{today['nightweather']} {today['nighttemp']}°C"
+    f"【机器人】苏州市今日天气\n"
+    f"白天：{today['textDay']} {today['tempMax']}°C\n"
+    f"夜间：{today['textNight']} {today['tempMin']}°C"
 )
+
 requests.post(WEBHOOK, json={"msg_type": "text", "content": {"text": weather}})
 
 # ---------- 2. 名人名言 ----------
