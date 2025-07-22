@@ -24,7 +24,8 @@ if weather_data.get("code") != "200" or indices_data.get("code") != "200" or war
 # 天气信息
 today_weather = weather_data["daily"][0]
 weather_text = (
-    f"【机器人】苏州市今日天气\n"
+    f"早上好~卓彬，希望今天你又是开心的一天\n"
+    f"苏州市今日天气\n"
     f"白天：{today_weather['textDay']} {today_weather['tempMax']}°C\n"
     f"夜间：{today_weather['textNight']} {today_weather['tempMin']}°C\n"
     f"湿度：{today_weather['humidity']}%\n"
