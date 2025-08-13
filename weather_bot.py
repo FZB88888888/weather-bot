@@ -3,7 +3,7 @@ import os, requests, random
 WEBHOOK = os.getenv("WEBHOOK")
 KEY     = os.getenv("WEATHER_KEY")          # 和风天气 Key
 HOST    = "mr2vhe92ku.re.qweatherapi.com"   # 专属 Host（控制台里复制）
-CITY    = "101190406"                       # 苏州市 LocationID
+CITY    = "101210101"                       # 绍兴市 LocationID
 
 # 获取天气数据
 url_weather = f"https://{HOST}/v7/weather/3d?location={CITY}&key={KEY}"
@@ -182,29 +182,32 @@ requests.post(WEBHOOK, json={"msg_type": "text", "content": {"text": f"—— {q
 
 # ---------- 3. 三大热榜 ----------
 # ---------- 实时热榜 ----------
+# ---------- 实时热榜 ----------
 def fetch_hot():
-    """聚合官方热榜"""
-    sources = {
-        "📈 微博热搜": "https://weibo.com/ajax/side/hotSearch",
-        "📈 百度热榜": "https://top.baidu.com/api/board?platform=wise&tab=realtime",
-        "📈 抖音热榜": "https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word/"
-    }
+    import requests
+
     headers = {"User-Agent": "Mozilla/5.0"}
+    # 1. 微博热搜
+    try:
+        w = requests.get("https://weibo.com/ajax/side/hotSearch", headers=headers, timeout=10).json()
+        weibo = [i["word"] for i in w["data"]["realtime"][:8]]
+    except:
+        weibo = ["接口异常"]
+    # 2. 百度热榜
+    try:
+        b = requests.get("https://top.baidu.com/api/board?platform=wise&tab=realtime", headers=headers, timeout=10).json()
+        baidu = [i["word"] for i in b["data"]["cards"][0]["content"][:8]]
+    except:
+        baidu = ["接口异常"]
+    # 3. 抖音热榜
+    try:
+        d = requests.get("https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word/", headers=headers, timeout=10).json()
+        douyin = [i["word"] for i in d["word_list"][:8]]
+    except:
+        douyin = ["接口异常"]
 
-    for title, url in sources.items():
-        try:
-            if "weibo" in url:
-                data = requests.get(url, headers=headers, timeout=10).json()
-                items = [i["word"] for i in data["data"]["realtime"][:8]]
-            elif "baidu" in url:
-                data = requests.get(url, headers=headers, timeout=10).json()
-                items = [i["word"] for i in data["data"]["cards"][0]["content"][:8]]
-            elif "douyin" in url:
-                data = requests.get(url, headers=headers, timeout=10).json()
-                items = [i["word"] for i in data["word_list"][:8]]
-        except Exception:
-            items = ["接口异常，稍后重试"]
-
+    # 依次发送到飞书
+    for title, items in [("📈 微博热搜", weibo), ("📈 百度热榜", baidu), ("📈 抖音热榜", douyin)]:
         card = {
             "msg_type": "post",
             "content": {
